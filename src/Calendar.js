@@ -6,6 +6,8 @@ class Calendar {
     constructor() {
         this.curDate = new Date();
         this.mode = 'month';
+        this.curWeekDay = this.curDate.getDate();
+        this.curWeek = this.curDate.getDay();
         this.initCalendar(this.curDate);
     }
 
@@ -157,42 +159,89 @@ class Calendar {
             lastMonthData.unshift(lastMonthDay - i);
         }
         let nextMonthData = [];
-        if(this.mode != 'week') {
-            if (nextMonthFirstDay > 0) {
-                for (let i = 0; i < (7 - nextMonthFirstDay); i++) {
-                    nextMonthData.push(i + 1);
-                }
+        if (nextMonthFirstDay > 0) {
+            for (let i = 0; i < (7 - nextMonthFirstDay); i++) {
+                nextMonthData.push(i + 1);
             }
         }
         let monthData = [];
         for (let i = 0; i < monthDay; i++) {
-            if(this.mode == 'week') {
-                if((lastMonthData.length + monthData.length) < 7) {
-                    monthData.push(i + 1);
-                }
-            }else {
-                monthData.push(i + 1);
-            }
+            monthData.push(i + 1);
         }
-        let tpl = ``;
-        lastMonthData.map((data, k) => {
-            tpl += `<div class="day-wrap">
+
+        if(this.mode == 'month') {
+            let tpl = ``;
+            lastMonthData.map((data, k) => {
+                tpl += `<div class="day-wrap">
                 <div class="day day-disable">${data}</div>
             </div>`;
-        });
-        monthData.map((data, k) => {
-            tpl += `<div class="day-wrap">
+            });
+            monthData.map((data, k) => {
+                tpl += `<div class="day-wrap">
                     <div class="day ${(data == today && fullYear == todayFullYear && month == todayMonth) ? 'day-today' : ''}">${data}</div>
                 </div>`;
-        });
-        nextMonthData.map((data, k) => {
-            tpl += `<div class="day-wrap">
+            });
+            nextMonthData.map((data, k) => {
+                tpl += `<div class="day-wrap">
                 <div class="day day-disable">${data}</div>
             </div>`;
-        });
-        $('.days').html(tpl);
-        $('.curMonth').text(`${fullYear}年${this.formatNumber(month)}月`)
+            });
+            $('.days').html(tpl);
+            $('.curMonth').text(`${fullYear}年${this.formatNumber(month)}月`);
+        }else {
+            let weekData = [];
+            let startDay = this.curWeekDay - this.curWeek;
+            let hasLastMonth = false;
+            let hasNextMonth = false;
+            for(let i = 0; i < 7; i++)  {
+                let day = startDay + i;
+                if(day < 1) {
+                    hasLastMonth = true;
+                    day = lastMonthDay + day;
+                }else if(day > monthDay) {
+                    hasNextMonth = true;
+                    day = day - monthDay;
+                }
+                weekData.push(day);
+            }
+            let tpl = ``;
+            weekData.map((data, k) => {
+                tpl += `<div class="day-wrap">
+                    <div class="day ${(data == today && fullYear == todayFullYear && month == todayMonth) ? 'day-today' : ''}">${data}</div>
+                </div>`;
+            });
+            $('.days').html(tpl);
+            $('.curMonth').text(`${fullYear}年${hasLastMonth?this.formatNumber(month - 1) + '-':''}${this.formatNumber(month)}${hasNextMonth?'-'+this.formatNumber(month + 1):''}月`);
+        }
+
     }
+
+    // initWeekCalendar() {
+    //     let _date = new Date();
+    //     let fullYear = _date.getFullYear();
+    //     let month = _date.getMonth() + 1;
+    //     let curDay = _date.getDay();
+    //     let curDate = _date.getDate();
+    //     let today = new Date().getDate();
+    //     let todayFullYear = new Date().getFullYear();
+    //     let todayMonth = new Date().getMonth() + 1;
+    //     let weekItem = [];
+    //     for(let i = curDay; i > 0; i--) {
+    //         weekItem.push(curDate - i);
+    //     }
+    //     for(let i = 0; i < (7 - curDay); i++) {
+    //         weekItem.push(i + curDate)
+    //     }
+    //     this.setWeek(weekItem);
+    //     let tpl = ``;
+    //     weekItem.map((data, k) => {
+    //         tpl += `<div class="day-wrap">
+    //                 <div class="day ${(data == today && fullYear == todayFullYear && month == todayMonth) ? 'day-today' : ''}">${data}</div>
+    //             </div>`;
+    //     });
+    //     $('.days').html(tpl);
+    //     $('.curMonth').text(`${fullYear}年${this.formatNumber(month)}月`);
+    // }
 
     nextMonth() {
         let curFullYear = this.curDate.getFullYear();
@@ -218,14 +267,113 @@ class Calendar {
         this.curDate = new Date(`${curFullYear}-${curMonth}`);
         this.initCalendar();
     }
+
+    nextWeek() {
+        this.curWeekDay = this.curWeekDay + 7;
+        let _date = this.curDate;
+        let fullYear = _date.getFullYear();
+        let month = _date.getMonth() + 1;
+        let monthDay = this.getMonthDay(fullYear, month);
+        if(this.curWeekDay > monthDay) {
+            this.nextMonth();
+            this.curWeekDay = this.curWeekDay - monthDay;
+        }else if(this.curWeekDay == monthDay) {
+            this.curWeekDay = monthDay;
+        }
+        this.initCalendar();
+    }
+
+    preWeek() {
+        this.curWeekDay = this.curWeekDay - 7;
+        let _date = this.curDate;
+        let fullYear = _date.getFullYear();
+        let month = _date.getMonth() + 1;
+        let monthDay = this.getMonthDay(fullYear, month);
+        if(this.curWeekDay < 1) {
+            month -= 1;
+            if(month < 1) {
+                fullYear -= 1;
+                month = 12;
+            }
+            let lasMonthDay = this.getMonthDay(fullYear, month);
+            this.preMonth();
+            this.curWeekDay = lasMonthDay + this.curWeekDay;
+        }else if(this.curWeekDay == monthDay) {
+            this.curWeekDay = monthDay;
+        }
+        this.initCalendar();
+    }
+
+    // nextWeek() {
+    //     let newWeek = [];
+    //     let _date = new Date();
+    //     let fullYear = _date.getFullYear();
+    //     let month = _date.getMonth() + 1;
+    //     let today = new Date().getDate();
+    //     let todayFullYear = new Date().getFullYear();
+    //     let todayMonth = new Date().getMonth() + 1;
+    //     let monthDay = this.getMonthDay(fullYear, month);
+    //     let hasNextMonth =false;
+    //     weekData.map((data) => {
+    //         let d = data + 7;
+    //         if(d > monthDay) {
+    //             d = d - monthDay;
+    //             hasNextMonth = true;
+    //         }
+    //         newWeek.push(d);
+    //     });
+    //     weekData = newWeek;
+    //     let tpl = ``;
+    //     newWeek.map((data, k) => {
+    //         tpl += `<div class="day-wrap">
+    //                 <div class="day ${(data == today && fullYear == todayFullYear && month == todayMonth) ? 'day-today' : ''}">${data}</div>
+    //             </div>`;
+    //     });
+    //     $('.days').html(tpl);
+    //     if(hasNextMonth) {
+    //         $('.curMonth').text(`${fullYear}年${this.formatNumber(month)}-${this.formatNumber(month + 1)}月`)
+    //     }else {
+    //         $('.curMonth').text(`${fullYear}年${this.formatNumber(month)}月`);
+    //     }
+    // }
+    //
+    // preWeek() {
+    //     let newWeek = [];
+    //     let _date = new Date();
+    //     let fullYear = _date.getFullYear();
+    //     let month = _date.getMonth() + 1;
+    //     let today = new Date().getDate();
+    //     let todayFullYear = new Date().getFullYear();
+    //     let todayMonth = new Date().getMonth() + 1;
+    //     weekData.map((data) => {
+    //         newWeek.push(data - 7);
+    //     });
+    //     weekData = newWeek;
+    //     let tpl = ``;
+    //     newWeek.map((data, k) => {
+    //         tpl += `<div class="day-wrap">
+    //                 <div class="day ${(data == today && fullYear == todayFullYear && month == todayMonth) ? 'day-today' : ''}">${data}</div>
+    //             </div>`;
+    //     });
+    //     $('.days').html(tpl);
+    //     $('.curMonth').text(`${fullYear}年${this.formatNumber(month)}月`)
+    // }
 }
 
 let calendar = new Calendar();
 $('.next').click(() => {
-    calendar.nextMonth();
+    if(calendar.mode == 'month') {
+        calendar.nextMonth();
+    }else {
+        calendar.nextWeek();
+    }
 });
 $('.pre').click(() => {
-    calendar.preMonth();
+    if(calendar.mode == 'month') {
+        calendar.preMonth();
+    }else {
+        calendar.preWeek();
+    }
 });
 $('.today').click(() => {
     calendar.todayPosition();
