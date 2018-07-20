@@ -13,11 +13,24 @@ class Calendar {
 
     setMode(mode) {
         this.mode = mode;
+        if(mode == 'week') {
+            let todayFullYear = new Date().getFullYear();
+            let todayMonth = new Date().getMonth() + 1;
+            let curDay = this.curDate.getDay();
+            let curFullYear = this.curDate.getFullYear();
+            let curMonth = this.curDate.getMonth() + 1;
+            if(todayFullYear != curFullYear || todayMonth != curMonth) {
+                this.curWeekDay = 1;
+                this.curWeek = curDay;
+            }
+        }
         this.initCalendar();
     }
 
     todayPosition() {
         this.curDate = new Date();
+        this.curWeekDay = this.curDate.getDate();
+        this.curWeek = this.curDate.getDay();
         this.initCalendar();
     }
 
